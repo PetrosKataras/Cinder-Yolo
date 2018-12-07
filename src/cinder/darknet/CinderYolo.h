@@ -25,6 +25,8 @@ public:
 private:
 	void networkProcessFn(std::future<void> test);
 	image_t surfaceToDarknetImage( const Surface32f& surface );
+	ci::Colorf getColorFromClassId( const int classId );
+	std::string getLabelFromClassId( const int classId );
 private:
 	std::unique_ptr<Detector> mDetector;
 	std::thread mNetworkProcessThread;

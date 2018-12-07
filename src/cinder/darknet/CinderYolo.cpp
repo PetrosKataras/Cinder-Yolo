@@ -72,12 +72,8 @@ void CinderYolo::networkProcessFn( std::future<void> futureObj )
 					Detection detection;
 					detection.mBoundingRect = Rectf( d.x, d.y, d.x+d.w, d.y+d.h );
 					detection.mBoundingRect.scale( scaleBRect );
-					int numClasses = mDetector->get_num_classes();
-					int offset = d.obj_id * 123457 % numClasses;
-					float r = get_color( 2, offset, numClasses );
-					float g = get_color( 1, offset, numClasses );
-					float b = get_color( 0, offset, numClasses );
-					detection.mColor = ci::Colorf( r, g, b );
+					detection.mColor = getColorFromClassId( d.obj_id );
+					detection.mLabel = getLabelFromClassId( d.obj_id );
 					mDetections.push_back( detection );
 				}
 			}
@@ -109,6 +105,21 @@ image_t CinderYolo::surfaceToDarknetImage( const Surface32f& surface )
 		}
 	}
 	return yoloImage;
+}
+
+ci::Colorf CinderYolo::getColorFromClassId( const int classId )
+{
+	int numClasses = mDetector->get_num_classes();
+	int offset = classId * 123457 % numClasses;
+	float r = get_color( 2, offset, numClasses );
+	float g = get_color( 1, offset, numClasses );
+	float b = get_color( 0, offset, numClasses );
+	return ci::Colorf( r, g, b );
+}
+
+std::string CinderYolo::getLabelFromClassId( const int classId )
+{
+	return mLabels.size() > 0 && mLabels.size() > classId ? mLabels[ classId ] : std::string();
 }
 
 } // namespace yolo
