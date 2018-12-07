@@ -1,6 +1,10 @@
 project( Darknet )
 
-cmake_minimum_required( VERSION 3.0 )
+cmake_minimum_required( VERSION 3.1 )
+
+# enable c++11 - Requires cmake version >= 3.1
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if( WIN32 )
   OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  FALSE )
@@ -117,9 +121,6 @@ endif()
 
 add_subdirectory( include )
 add_subdirectory( src )
-if( BUILD_EXAMPLES )
-  add_subdirectory( examples )
-endif()
 
 if( WIN32 )
   add_subdirectory( 3rdparty )

@@ -12,7 +12,7 @@ set( gpu_source
   dropout_layer_kernels.cu
   im2col_kernels.cu
   maxpool_layer_kernels.cu
-  #network_kernels.cu
+  network_kernels.cu
 )
 
 set( source
@@ -41,7 +41,6 @@ set( source
   layer.c
   list.c
   local_layer.c
-  lstm_layer.c
   matrix.c
   maxpool_layer.c
   network.c
@@ -50,18 +49,18 @@ set( source
   parser.c
   region_layer.c
   reorg_layer.c
+  reorg_old_layer.c
   rnn_layer.c
   upsample_layer.c
   route_layer.c
   shortcut_layer.c
   softmax_layer.c
-  logistic_layer.c
-  l2norm_layer.c
-  iseg_layer.c
-  image_opencv.cpp
   yolo_layer.c
   tree.c
   utils.c
+  http_stream.cpp
+  yolo_v2_class.cpp
+  detector.c
   )
 
 set( headers
@@ -91,7 +90,6 @@ set( headers
   layer.h
   list.h
   local_layer.h
-  lstm_layer.h
   matrix.h
   maxpool_layer.h
   network.h
@@ -100,19 +98,19 @@ set( headers
   parser.h
   region_layer.h
   reorg_layer.h
+  reorg_old_layer.h
   rnn_layer.h
   route_layer.h
   upsample_layer.h
   shortcut_layer.h
   softmax_layer.h
-  logistic_layer.h
-  l2norm_layer.h
   yolo_layer.h
-  iseg_layer.h
   stb_image.h
   stb_image_write.h
   tree.h
   utils.h
+  http_stream.h
+  #yolo_v2_class.hpp
   )
 
 if( WIN32 )
@@ -125,7 +123,8 @@ if( WIN32 )
   set( headers
     ${headers}
     getopt.h
-    gettimeofday.h )
+    gettimeofday.h 
+	unistd.h )
 endif()
 
 if( USE_GPU )

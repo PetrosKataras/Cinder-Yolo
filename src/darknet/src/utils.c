@@ -3,57 +3,26 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
-#include <unistd.h>
 #include <float.h>
 #include <limits.h>
-#include <time.h>
+#ifdef WIN32
+#include "unistd.h"
+#include "gettimeofday.h"
+#else
+#include <unistd.h>
 #include <sys/time.h>
-
+#endif
 #include "utils.h"
 
-
-/*
-// old timing. is it better? who knows!!
-double get_wall_time()
-{
-    struct timeval time;
-    if (gettimeofday(&time,NULL)){
-        return 0;
-    }
-    return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
-*/
+#pragma warning(disable: 4996)
 
 double what_time_is_it_now()
 {
     struct timeval time;
-    if (gettimeofday(&time,NULL)){
+    if (gettimeofday(&time, NULL)) {
         return 0;
     }
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
-
-int *read_intlist(char *gpu_list, int *ngpus, int d)
-{
-    int *gpus = 0;
-    if(gpu_list){
-        int len = strlen(gpu_list);
-        *ngpus = 1;
-        int i;
-        for(i = 0; i < len; ++i){
-            if (gpu_list[i] == ',') ++*ngpus;
-        }
-        gpus = calloc(*ngpus, sizeof(int));
-        for(i = 0; i < *ngpus; ++i){
-            gpus[i] = atoi(gpu_list);
-            gpu_list = strchr(gpu_list, ',')+1;
-        }
-    } else {
-        gpus = calloc(1, sizeof(float));
-        *gpus = d;
-        *ngpus = 1;
-    }
-    return gpus;
 }
 
 int *read_map(char *filename)
@@ -78,7 +47,7 @@ void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
         size_t start = n*i/sections;
         size_t end = n*(i+1)/sections;
         size_t num = end-start;
-        shuffle(arr+(start*size), num, size);
+        shuffle((char*)arr+(start*size), num, size);
     }
 }
 
@@ -88,26 +57,10 @@ void shuffle(void *arr, size_t n, size_t size)
     void *swp = calloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + rand()/(RAND_MAX / (n-i)+1);
-        memcpy(swp,          arr+(j*size), size);
-        memcpy(arr+(j*size), arr+(i*size), size);
-        memcpy(arr+(i*size), swp,          size);
+        memcpy(swp,            (char*)arr+(j*size), size);
+        memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
+        memcpy((char*)arr+(i*size), swp,          size);
     }
-}
-
-int *random_index_order(int min, int max)
-{
-    int *inds = calloc(max-min, sizeof(int));
-    int i;
-    for(i = min; i < max; ++i){
-        inds[i] = i;
-    }
-    for(i = min; i < max-1; ++i){
-        int swap = inds[i];
-        int index = i + rand()%(max-i);
-        inds[i] = inds[index];
-        inds[index] = swap;
-    }
-    return inds;
 }
 
 void del_arg(int argc, char **argv, int index)
@@ -184,6 +137,7 @@ char *basecfg(char *cfgfile)
     {
         c = next+1;
     }
+    if(!next) while ((next = strchr(c, '\\'))) { c = next + 1; }
     c = copy_string(c);
     next = strchr(c, '.');
     if (next) *next = 0;
@@ -215,18 +169,85 @@ void pm(int M, int N, float *A)
 
 void find_replace(char *str, char *orig, char *rep, char *output)
 {
-    char buffer[4096] = {0};
+    char *buffer = calloc(8192, sizeof(char));
     char *p;
 
     sprintf(buffer, "%s", str);
     if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
         sprintf(output, "%s", str);
+        free(buffer);
         return;
     }
 
     *p = '\0';
 
     sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
+    free(buffer);
+}
+
+void trim(char *str)
+{
+    char *buffer = calloc(8192, sizeof(char));
+    sprintf(buffer, "%s", str);
+
+    char *p = buffer;
+    while (*p == ' ' || *p == '\t') ++p;
+
+    char *end = p + strlen(p) - 1;
+    while (*end == ' ' || *end == '\t') {
+        *end = '\0';
+        --end;
+    }
+    sprintf(str, "%s", p);
+
+    free(buffer);
+}
+
+void find_replace_extension(char *str, char *orig, char *rep, char *output)
+{
+    char *buffer = calloc(8192, sizeof(char));
+
+    sprintf(buffer, "%s", str);
+    char *p = strstr(buffer, orig);
+    int offset = (p - buffer);
+    int chars_from_end = strlen(buffer) - offset;
+    if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
+        sprintf(output, "%s", str);
+        free(buffer);
+        return;
+    }
+
+    *p = '\0';
+    sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
+    free(buffer);
+}
+
+void replace_image_to_label(char *input_path, char *output_path)
+{
+    find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
+    find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
+    find_replace(output_path, "/JPEGImages/", "/labels/", output_path);    // PascalVOC
+    find_replace(output_path, "\\images\\train2014\\", "\\labels\\train2014\\", output_path);    // COCO
+    find_replace(output_path, "\\images\\val2014\\", "\\labels\\val2014\\", output_path);        // COCO
+    find_replace(output_path, "\\JPEGImages\\", "\\labels\\", output_path);    // PascalVOC
+    //find_replace(output_path, "/images/", "/labels/", output_path);    // COCO
+    //find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);        // PascalVOC
+    //find_replace(output_path, "/VOC2012/JPEGImages/", "/VOC2012/labels/", output_path);        // PascalVOC
+
+    //find_replace(output_path, "/raw/", "/labels/", output_path);
+    trim(output_path);
+
+    // replace only ext of files
+    find_replace_extension(output_path, ".jpg", ".txt", output_path);
+    find_replace_extension(output_path, ".JPG", ".txt", output_path); // error
+    find_replace_extension(output_path, ".jpeg", ".txt", output_path);
+    find_replace_extension(output_path, ".JPEG", ".txt", output_path);
+    find_replace_extension(output_path, ".png", ".txt", output_path);
+    find_replace_extension(output_path, ".PNG", ".txt", output_path);
+    find_replace_extension(output_path, ".bmp", ".txt", output_path);
+    find_replace_extension(output_path, ".BMP", ".txt", output_path);
+    find_replace_extension(output_path, ".ppm", ".txt", output_path);
+    find_replace_extension(output_path, ".PPM", ".txt", output_path);
 }
 
 float sec(clock_t clocks)
@@ -254,34 +275,19 @@ void error(const char *s)
 {
     perror(s);
     assert(0);
-    exit(-1);
-}
-
-unsigned char *read_file(char *filename)
-{
-    FILE *fp = fopen(filename, "rb");
-    size_t size;
-
-    fseek(fp, 0, SEEK_END); 
-    size = ftell(fp);
-    fseek(fp, 0, SEEK_SET); 
-
-    unsigned char *text = calloc(size+1, sizeof(char));
-    fread(text, 1, size, fp);
-    fclose(fp);
-    return text;
+    exit(EXIT_FAILURE);
 }
 
 void malloc_error()
 {
     fprintf(stderr, "Malloc error\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
 }
 
 void file_error(char *s)
 {
     fprintf(stderr, "Couldn't open file: %s\n", s);
-    exit(0);
+    exit(EXIT_FAILURE);
 }
 
 list *split_str(char *s, char delim)
@@ -306,10 +312,24 @@ void strip(char *s)
     size_t offset = 0;
     for(i = 0; i < len; ++i){
         char c = s[i];
-        if(c==' '||c=='\t'||c=='\n') ++offset;
+        if(c==' '||c=='\t'||c=='\n'||c =='\r'||c==0x0d||c==0x0a) ++offset;
         else s[i-offset] = c;
     }
     s[len-offset] = '\0';
+}
+
+
+void strip_args(char *s)
+{
+    size_t i;
+    size_t len = strlen(s);
+    size_t offset = 0;
+    for (i = 0; i < len; ++i) {
+        char c = s[i];
+        if (c == '\t' || c == '\n' || c == '\r' || c == 0x0d || c == 0x0a) ++offset;
+        else s[i - offset] = c;
+    }
+    s[len - offset] = '\0';
 }
 
 void strip_char(char *s, char bad)
@@ -358,7 +378,11 @@ char *fgetl(FILE *fp)
         fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
-    if(line[curr-1] == '\n') line[curr-1] = '\0';
+    if(curr >= 2)
+        if(line[curr-2] == 0x0d) line[curr-2] = 0x00;
+
+    if(curr >= 1)
+        if(line[curr-1] == 0x0a) line[curr-1] = 0x00;
 
     return line;
 }
@@ -576,7 +600,7 @@ float mag_array(float *a, int n)
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
-        sum += a[i]*a[i];   
+        sum += a[i]*a[i];
     }
     return sqrt(sum);
 }
@@ -602,20 +626,6 @@ int sample_array(float *a, int n)
     return n-1;
 }
 
-int max_int_index(int *a, int n)
-{
-    if(n <= 0) return -1;
-    int i, max_i = 0;
-    int max = a[0];
-    for(i = 1; i < n; ++i){
-        if(a[i] > max){
-            max = a[i];
-            max_i = i;
-        }
-    }
-    return max_i;
-}
-
 int max_index(float *a, int n)
 {
     if(n <= 0) return -1;
@@ -633,8 +643,8 @@ int max_index(float *a, int n)
 int int_index(int *a, int val, int n)
 {
     int i;
-    for(i = 0; i < n; ++i){
-        if(a[i] == val) return i;
+    for (i = 0; i < n; ++i) {
+        if (a[i] == val) return i;
     }
     return -1;
 }
@@ -685,14 +695,14 @@ float rand_normal()
 
 size_t rand_size_t()
 {
-    return  ((size_t)(rand()&0xff) << 56) | 
-        ((size_t)(rand()&0xff) << 48) |
-        ((size_t)(rand()&0xff) << 40) |
-        ((size_t)(rand()&0xff) << 32) |
-        ((size_t)(rand()&0xff) << 24) |
-        ((size_t)(rand()&0xff) << 16) |
-        ((size_t)(rand()&0xff) << 8) |
-        ((size_t)(rand()&0xff) << 0);
+    return  ((size_t)(rand()&0xff) << 56) |
+            ((size_t)(rand()&0xff) << 48) |
+            ((size_t)(rand()&0xff) << 40) |
+            ((size_t)(rand()&0xff) << 32) |
+            ((size_t)(rand()&0xff) << 24) |
+            ((size_t)(rand()&0xff) << 16) |
+            ((size_t)(rand()&0xff) << 8) |
+            ((size_t)(rand()&0xff) << 0);
 }
 
 float rand_uniform(float min, float max)
@@ -703,12 +713,13 @@ float rand_uniform(float min, float max)
         max = swap;
     }
     return ((float)rand()/RAND_MAX * (max - min)) + min;
+    //return (random_float() * (max - min)) + min;
 }
 
 float rand_scale(float s)
 {
-    float scale = rand_uniform(1, s);
-    if(rand()%2) return scale;
+    float scale = rand_uniform_strong(1, s);
+    if(random_gen()%2) return scale;
     return 1./scale;
 }
 
@@ -724,3 +735,32 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+unsigned int random_gen()
+{
+    unsigned int rnd = 0;
+#ifdef WIN32
+    rand_s(&rnd);
+#else
+    rnd = rand();
+#endif
+    return rnd;
+}
+
+float random_float()
+{
+#ifdef WIN32
+    return ((float)random_gen() / (float)UINT_MAX);
+#else
+    return ((float)random_gen() / (float)RAND_MAX);
+#endif
+}
+
+float rand_uniform_strong(float min, float max)
+{
+    if (max < min) {
+        float swap = min;
+        min = max;
+        max = swap;
+    }
+    return (random_float() * (max - min)) + min;
+}

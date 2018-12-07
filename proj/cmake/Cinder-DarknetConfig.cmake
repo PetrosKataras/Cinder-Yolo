@@ -5,7 +5,7 @@ if( NOT Cinder-Darknet )
 	get_filename_component( CI_DARKNET_INCLUDE_PATH "${CI_DARKNET_SOURCE_PATH}" ABSOLUTE )
 	get_filename_component( CI_DARKNET_PUBLIC_INCLUDE_PATH "${CI_DARKNET_SOURCE_PATH}/../.." ABSOLUTE )
 	# darknet options
-	option( USE_GPU "Enable Darknet gpu support through Cuda" FALSE )
+	option( USE_GPU "Enable Darknet gpu support through Cuda" TRUE )
 	option( USE_OPENCV "Enable OpenCV" FALSE )
 	option( USE_CUDNN "Enable CudaNN" FALSE )
 	# compile darknet
@@ -28,10 +28,10 @@ if( NOT Cinder-Darknet )
 	endif()
 	
 	# Cinder-Darknet	
-	set( CI_DARKNET_SOURCES ${CI_DARKNET_SOURCE_PATH}/CinderDarknet.cpp )
+	set( CI_DARKNET_SOURCES ${CI_DARKNET_SOURCE_PATH}/CinderYolo.cpp )
 	add_library( Cinder-Darknet ${CI_DARKNET_SOURCES} )
 
-	target_include_directories( Cinder-Darknet PRIVATE ${CI_DARKNET_SOURCE_PATH} ${DARKNET_PATH}/src )
+	target_include_directories( Cinder-Darknet PRIVATE ${CI_DARKNET_SOURCE_PATH}  )
 	target_include_directories( Cinder-Darknet PUBLIC ${CI_DARKNET_PUBLIC_INCLUDE_PATH} ${DARKNET_INCLUDES} )
 
 	if( NOT TARGET cinder )

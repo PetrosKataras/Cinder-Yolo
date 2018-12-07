@@ -48,7 +48,7 @@ ACTIVATION get_activation(char *s)
     if (strcmp(s, "loggy")==0) return LOGGY;
     if (strcmp(s, "relu")==0) return RELU;
     if (strcmp(s, "elu")==0) return ELU;
-    if (strcmp(s, "selu")==0) return SELU;
+    if (strcmp(s, "selu") == 0) return SELU;
     if (strcmp(s, "relie")==0) return RELIE;
     if (strcmp(s, "plse")==0) return PLSE;
     if (strcmp(s, "hardtan")==0) return HARDTAN;
@@ -100,8 +100,16 @@ float activate(float x, ACTIVATION a)
 void activate_array(float *x, const int n, const ACTIVATION a)
 {
     int i;
-    for(i = 0; i < n; ++i){
-        x[i] = activate(x[i], a);
+    if (a == LINEAR) {}
+    else if (a == LEAKY) {
+        for (i = 0; i < n; ++i) {
+            x[i] = leaky_activate(x[i]);
+        }
+    }
+    else {
+        for (i = 0; i < n; ++i) {
+            x[i] = activate(x[i], a);
+        }
     }
 }
 
@@ -146,5 +154,5 @@ void gradient_array(const float *x, const int n, const ACTIVATION a, float *delt
     for(i = 0; i < n; ++i){
         delta[i] *= gradient(x[i], a);
     }
-} 
+}
 

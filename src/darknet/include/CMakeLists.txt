@@ -2,7 +2,7 @@
 # Build file for Darknet include directory
 ##
 set( headers
-  darknet.h
+  yolo_v2_class.hpp
   )
 
 install( FILES ${headers}

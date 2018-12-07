@@ -3,7 +3,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Log.h"
 
-#include "cinder/darknet/CinderDarknet.h"
+#include "cinder/darknet/CinderYolo.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -16,16 +16,16 @@ public:
 	void keyDown( KeyEvent event ) final;
     
 private:
-	std::unique_ptr<darknet::CinderDarknet> mCiDarknet;
+	std::unique_ptr<yolo::CinderYolo> mCiDarknet;
 	Surface32fRef mSurface;
-	std::vector<darknet::CinderDarknet::Detection> mDetectedObjects;
+	std::vector<yolo::CinderYolo::Detection> mDetectedObjects;
 	gl::TextureRef mTexture;
 	float mThreshold{ .1f };
 };
 
 void BasicDarknetApp::setup()
 {
-	mCiDarknet = std::make_unique<darknet::CinderDarknet>( getAssetPath( "yolov3-tiny.cfg" ), getAssetPath( "yolov3-tiny.weights" ), getAssetPath( "coco.names" ) );
+	mCiDarknet = std::make_unique<yolo::CinderYolo>( getAssetPath( "yolov3-tiny.cfg" ), getAssetPath( "yolov3-tiny.weights" ), getAssetPath( "coco.names" ) );
 	mSurface = Surface32f::create( loadImage( loadAsset( "dog.jpg" ) ) );
 	mTexture = gl::Texture::create( *(mSurface.get() ) );
 }
@@ -40,18 +40,9 @@ void BasicDarknetApp::update()
 void BasicDarknetApp::draw()
 {
 	gl::clear( Color( .2f, .2f, .2f ) );
-	auto detectedObjectsQueue = mCiDarknet->getDetectionsQueue();
-	if( detectedObjectsQueue ) {
-		if( detectedObjectsQueue->getSize() > 0 )
-			mDetectedObjects.clear();
-			while( detectedObjectsQueue->getSize() > 0 ) {
-				darknet::CinderDarknet::Detection detection;
-				detectedObjectsQueue->tryPopBack( &detection );
-				mDetectedObjects.push_back( detection );
-			}
-	}
+	auto detections = mCiDarknet->getDetections();
 	gl::draw( mTexture );
-	for( const auto& detectedObject : mDetectedObjects ) {
+	for( const auto& detectedObject : detections ) {
 			gl::ScopedColor scopedColor( detectedObject.mColor );
 			gl::drawStrokedRect( detectedObject.mBoundingRect );
 			gl::ScopedBlend scopedBlend( true );
