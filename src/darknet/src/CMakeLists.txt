@@ -135,7 +135,6 @@ if( USE_GPU )
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDA_curand_LIBRARY} )
 endif()
-message(STATUS "EWERTERERE" )
 add_library( darknet_lib
   ${headers}
   ${source}

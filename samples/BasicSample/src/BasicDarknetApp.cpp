@@ -2,11 +2,14 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 #include "cinder/Log.h"
+#include "cinder/Capture.h"
 
 #include "cinder/darknet/CinderYolo.h"
 
 using namespace ci;
 using namespace ci::app;
+
+//#define USE_CAPTURE
 
 class BasicDarknetApp : public App {
 public:
@@ -16,8 +19,9 @@ public:
 	void keyDown( KeyEvent event ) final;
     
 private:
+	CaptureRef mCapture;
 	std::unique_ptr<yolo::CinderYolo> mCiDarknet;
-	Surface32fRef mSurface;
+	SurfaceRef mSurface;
 	std::vector<yolo::CinderYolo::Detection> mDetectedObjects;
 	gl::TextureRef mTexture;
 	float mThreshold{ .1f };
@@ -25,15 +29,32 @@ private:
 
 void BasicDarknetApp::setup()
 {
+#if defined( USE_CAPTURE )
+	try {
+		mCapture = Capture::create( getWindowWidth(), getWindowHeight() );
+		mCapture->start();
+	}
+	catch( ci::Exception& exc ) {
+		CI_LOG_EXCEPTION( "Failed to init capture : ", exc );
+	}
+#else
+	mSurface = Surface::create( loadImage( loadAsset( "dog.jpg" ) ) );
+	mTexture = gl::Texture::create( *(mSurface.get()) );
+#endif
 	mCiDarknet = std::make_unique<yolo::CinderYolo>( getAssetPath( "yolov3-tiny.cfg" ), getAssetPath( "yolov3-tiny.weights" ), getAssetPath( "coco.names" ) );
-	mSurface = Surface32f::create( loadImage( loadAsset( "dog.jpg" ) ) );
-	mTexture = gl::Texture::create( *(mSurface.get() ) );
 }
 
 void BasicDarknetApp::update()
 {
-	if( mCiDarknet && mSurface ) {
+	//getWindow()->setTitle( std::to_string( getAverageFps() ) );
+	if( mCiDarknet ) {
+#if defined( USE_CAPTURE )
+		auto surface = mCapture->getSurface();
+		if( surface )
+			mCiDarknet->runYolo( *surface, mThreshold );
+#else
 		mCiDarknet->runYolo( *mSurface.get(), mThreshold );
+#endif	
 	}
 }
 
@@ -41,6 +62,14 @@ void BasicDarknetApp::draw()
 {
 	gl::clear( Color( .2f, .2f, .2f ) );
 	auto detections = mCiDarknet->getDetections();
+#if defined( USE_CAPTURE )
+	if( mCapture && mCapture->getSurface() ) {
+		if( ! mTexture )
+			mTexture = gl::Texture::create( *mCapture->getSurface(), gl::Texture::Format().loadTopDown() );
+		else
+			mTexture->update( *mCapture->getSurface() );
+	}	
+#endif
 	gl::draw( mTexture );
 	for( const auto& detectedObject : detections ) {
 			gl::ScopedColor scopedColor( detectedObject.mColor );

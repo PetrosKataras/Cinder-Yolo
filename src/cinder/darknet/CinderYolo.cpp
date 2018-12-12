@@ -22,10 +22,9 @@ CinderYolo::CinderYolo( const fs::path& cfgFilepath, const fs::path& weightsFile
 				mLabels.push_back( line );
 			}
 		}
-		//mLabels = objects_names_from_file( &labelsFilepathStr[0] );
 	}
 	// Create the input queue
-	mSurfaceQueue = std::make_unique<ConcurrentCircularBuffer<Surface32f>>( 15 );
+	mSurfaceQueue = std::make_unique<ConcurrentCircularBuffer<Surface>>( 15 );
 	// Start the processing thread
 	auto futureObj = mTerminateProcessSignal.get_future();
 	mNetworkProcessThread = std::thread( &CinderYolo::networkProcessFn, this, std::move( futureObj ) );
@@ -44,7 +43,7 @@ CinderYolo::~CinderYolo()
 	
 }
 
-void CinderYolo::runYolo( const Surface32f& surface, const float threshold )
+void CinderYolo::runYolo( const Surface& surface, const float threshold )
 {
 	mSurfaceQueue->tryPushFront( surface );	
 	mThreshold = threshold;
@@ -54,8 +53,8 @@ void CinderYolo::networkProcessFn( std::future<void> futureObj )
 {
 	while( futureObj.wait_for( std::chrono::milliseconds( 1 ) ) == std::future_status::timeout ) {
 		if( mDetector && mSurfaceQueue->isNotEmpty() ) {
-			Surface32f surface;
-			Surface32f surfaceCopy;
+			Surface surface;
+			Surface surfaceCopy;
 			ci::vec2 scaleBRect( 1.0f );
 			if( mSurfaceQueue->tryPopBack( &surface ) ) {
 				if( surface.getWidth() != mDetector->get_net_width() || surface.getHeight() != mDetector->get_net_height() ) {
@@ -78,10 +77,11 @@ void CinderYolo::networkProcessFn( std::future<void> futureObj )
 				}
 			}
 		}
+		else std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) ) ;
 	}
 }
 
-image_t CinderYolo::surfaceToDarknetImage( const Surface32f& surface )
+image_t CinderYolo::surfaceToDarknetImage( const Surface& surface )
 {
 	// conversion routine from: darknet/src/image_opencv.cpp 	
 	auto makeYoloImage = [] ( int w, int h, int c ) -> image_t {
@@ -100,7 +100,7 @@ image_t CinderYolo::surfaceToDarknetImage( const Surface32f& surface )
 	for( int i = 0; i < h; ++i ) {
 		for( int k = 0; k < c ; ++k ) {
 			for( int j = 0; j < w; ++j ) {
-				yoloImage.data[ k*w*h+i*w+j ] = surface.getData()[ i*widthStep+j*c+k ];
+				yoloImage.data[ k*w*h+i*w+j ] = (float)surface.getData()[ i*widthStep+j*c+k ] / 255.0f;
 			}
 		}
 	}
