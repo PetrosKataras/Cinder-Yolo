@@ -1,4 +1,4 @@
-if( NOT Cinder-Darknet )
+if( NOT Cinder-Yolo )
 	# directory paths
 	get_filename_component( DARKNET_PATH "${CMAKE_CURRENT_LIST_DIR}/../../src/darknet/" ABSOLUTE )
 	get_filename_component( CI_DARKNET_SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../src/cinder/darknet" ABSOLUTE )
@@ -27,12 +27,12 @@ if( NOT Cinder-Darknet )
 		target_compile_definitions( darknet_lib INTERFACE "-DCUDNN" )
 	endif()
 	
-	# Cinder-Darknet	
+	# Cinder-Yolo	
 	set( CI_DARKNET_SOURCES ${CI_DARKNET_SOURCE_PATH}/CinderYolo.cpp )
-	add_library( Cinder-Darknet ${CI_DARKNET_SOURCES} )
+	add_library( Cinder-Yolo ${CI_DARKNET_SOURCES} )
 
-	target_include_directories( Cinder-Darknet PRIVATE ${CI_DARKNET_SOURCE_PATH}  )
-	target_include_directories( Cinder-Darknet PUBLIC ${CI_DARKNET_PUBLIC_INCLUDE_PATH} ${DARKNET_INCLUDES} )
+	target_include_directories( Cinder-Yolo PRIVATE ${CI_DARKNET_SOURCE_PATH}  )
+	target_include_directories( Cinder-Yolo PUBLIC ${CI_DARKNET_PUBLIC_INCLUDE_PATH} ${DARKNET_INCLUDES} )
 
 	if( NOT TARGET cinder )
 		include( "${CINDER_PATH}/proj/cmake/configure.cmake" )
@@ -41,5 +41,5 @@ if( NOT Cinder-Darknet )
 			"$ENV{CINDER_PATH}/${CINDER_LIB_DIRECTORY}" 
 		)
 	endif()
-	target_link_libraries( Cinder-Darknet PRIVATE cinder darknet_lib )
+	target_link_libraries( Cinder-Yolo PRIVATE cinder darknet_lib )
 endif()

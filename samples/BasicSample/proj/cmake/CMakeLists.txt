@@ -11,5 +11,5 @@ ci_make_app(
 	SOURCES
 	${APP_PATH}/src/BasicDarknetApp.cpp
 	CINDER_PATH ${CINDER_PATH}
-	BLOCKS Cinder-Darknet
+	BLOCKS Cinder-Yolo
 )
