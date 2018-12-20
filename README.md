@@ -6,6 +6,11 @@ Tested on macOS with Cuda 10 and cuDNN 7.3.1. There is an issue with CMake's `Fi
 
 You will have to download the pre-trained weights separately. For normal v3 [here](https://pjreddie.com/media/files/yolov3.weights) or for tiny version [here](https://pjreddie.com/media/files/yolov3-tiny.weights)
 
-Assuming you have cloned the block inside Cinder's block directory and you have already built Cinder in debug mode run:
+Build Cinder and then from Cinder's root folder run:
 
-`cd Cinder-Yolo/samples/BasicSample/proj/cmake && mkdir build && cd build && cmake .. && make -j4`
+```
+cd Cinder-Yolo/samples/BasicSample/proj/cmake && \
+mkdir build && cd build && \
+cmake .. -DUSE_GPU=ON && \
+make -j4
+```
