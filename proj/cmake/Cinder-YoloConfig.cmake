@@ -5,7 +5,7 @@ if( NOT Cinder-Yolo )
 	get_filename_component( CI_DARKNET_INCLUDE_PATH "${CI_DARKNET_SOURCE_PATH}" ABSOLUTE )
 	get_filename_component( CI_DARKNET_PUBLIC_INCLUDE_PATH "${CI_DARKNET_SOURCE_PATH}/../.." ABSOLUTE )
 	# darknet options
-	option( USE_GPU "Enable Darknet gpu support through Cuda" TRUE )
+	option( USE_GPU "Enable Darknet gpu support through Cuda" FALSE )
 	option( USE_OPENCV "Enable OpenCV" FALSE )
 	option( USE_CUDNN "Enable CudaNN" FALSE )
 	# compile darknet
