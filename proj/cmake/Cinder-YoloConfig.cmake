@@ -5,9 +5,9 @@ if( NOT Cinder-Yolo )
 	get_filename_component( CI_DARKNET_INCLUDE_PATH "${CI_DARKNET_SOURCE_PATH}" ABSOLUTE )
 	get_filename_component( CI_DARKNET_PUBLIC_INCLUDE_PATH "${CI_DARKNET_SOURCE_PATH}/../.." ABSOLUTE )
 	# darknet options
-	option( USE_GPU "Enable Darknet gpu support through Cuda" FALSE )
-	option( USE_OPENCV "Enable OpenCV" FALSE )
-	option( USE_CUDNN "Enable CudaNN" FALSE )
+	option( USE_GPU "Enable Darknet gpu support through Cuda" OFF )
+	option( USE_OPENCV "Enable OpenCV" OFF )
+	option( USE_CUDNN "Enable CudaNN" OFF )
 	# compile darknet
 	add_subdirectory( ${DARKNET_PATH} ${CMAKE_CURRENT_BINARY_DIR}/darknet )
 	if( USE_GPU )
